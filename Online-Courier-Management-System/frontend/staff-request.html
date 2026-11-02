@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Registration Request - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  
+</head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card" style="max-width: 600px; margin: 40px auto;">
+            <h2>Staff Registration Request</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">
+                Submit your request to become a staff member. An admin will review and approve your request.
+            </p>
+            
+            <div id="message" class="alert hidden"></div>
+            
+            <form id="staffRequestForm" class="form-grid cols-2">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <select id="city" name="city" required></select>
+                </div>
+                
+                <div style="grid-column: 1 / -1;">
+                    <button type="submit" class="btn">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/cities.js"></script>
+    <script>
+        const form = document.getElementById('staffRequestForm');
+        const message = document.getElementById('message');
+        const citySelect = document.getElementById('city');
+
+        // Populate cities
+        window.INDIAN_CITIES.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city;
+            option.textContent = city;
+            citySelect.appendChild(option);
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            message.className = 'alert hidden';
+
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                city: document.getElementById('city').value
+            };
+
+            try {
+                await window.ocmsAPI.api('/staff/request', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                message.textContent = 'Request submitted successfully! An admin will review it soon.';
+                message.className = 'alert success';
+                form.reset();
+            } catch (error) {
+                message.textContent = error.message;
+                message.className = 'alert error';
+            }
+        });
+    </script>
+</body>
+</html>

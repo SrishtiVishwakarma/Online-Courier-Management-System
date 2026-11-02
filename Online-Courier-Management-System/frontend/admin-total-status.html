@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total Couriers Status - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>Total Couriers Status</h2>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="summary" class="hidden"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadSummary() {
+            try {
+                const summary = await window.ocmsAPI.api('/admin/dashboard/status-summary');
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('summary').classList.remove('hidden');
+                document.getElementById('summary').innerHTML = `
+                    <div class="form-grid cols-2">
+                        ${Object.entries(summary).map(([status, count]) => `
+                            <div class="card" style="background: var(--bg); text-align: center; padding: 30px;">
+                                <h3 style="font-size: 48px; margin-bottom: 8px; color: var(--primary);">${count}</h3>
+                                <p style="font-size: 18px; font-weight: 600;">${status}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<p class="alert error">${error.message}</p>`;
+            }
+        }
+
+        loadSummary();
+    </script>
+</body>
+</html>

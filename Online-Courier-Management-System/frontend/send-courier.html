@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Courier - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+            <h2>Send Courier</h2>
+            <div id="message" class="alert hidden"></div>
+            
+            <form id="courierForm" class="form-grid cols-2">
+                <div class="form-group">
+                    <label for="senderName">Sender Name</label>
+                    <input type="text" id="senderName" name="senderName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="senderCity">Sender City</label>
+                    <select id="senderCity" name="senderCity" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="senderMobile">Sender Mobile</label>
+                    <input type="tel" id="senderMobile" name="senderMobile" pattern="[0-9]{10}" placeholder="10-digit mobile number" required>
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="senderAddress">Sender Address</label>
+                    <textarea id="senderAddress" name="senderAddress" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="receiverName">Receiver Name</label>
+                    <input type="text" id="receiverName" name="receiverName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="receiverCity">Receiver City</label>
+                    <select id="receiverCity" name="receiverCity" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recipientMobile">Receiver Mobile</label>
+                    <input type="tel" id="recipientMobile" name="recipientMobile" pattern="[0-9]{10}" placeholder="10-digit mobile number" required>
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="receiverAddress">Receiver Address</label>
+                    <textarea id="receiverAddress" name="receiverAddress" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input type="number" id="weight" name="weight" step="0.01" min="0.01" required>
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <div class="card" style="background: var(--bg); padding: 12px; margin: 0;">
+                        <h4 style="margin: 0 0 8px 0; font-size: 14px;">Delivery Charges</h4>
+                        <p style="margin: 4px 0; font-size: 13px;"><strong>Rate:</strong> ₹30 per kg</p>
+                        <p style="margin: 4px 0; font-size: 13px;"><strong>Chargeable Weight:</strong> <span id="chargeableWeight">-</span> kg</p>
+                        <p style="margin: 4px 0; font-size: 14px; color: var(--primary);"><strong>Total Charge:</strong> <span id="totalCharge">₹0</span></p>
+                        <p style="margin: 4px 0; font-size: 11px; color: var(--text-muted);">* Weight is rounded up (e.g., 1.2kg = 2kg for charging)</p>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="notes">Notes (Optional)</label>
+                    <textarea id="notes" name="notes"></textarea>
+                </div>
+                
+                <div style="grid-column: 1 / -1;">
+                    <button type="submit" class="btn">Create Courier</button>
+                </div>
+            </form>
+            
+            <div id="result" class="card hidden" style="margin-top: 20px; background: var(--bg);">
+                <h3>Courier Created Successfully!</h3>
+                <p>Courier ID: <strong id="resultCourierId"></strong></p>
+                <button id="receiptBtn" class="btn btn-success">Download Receipt (PDF)</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/cities.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        const form = document.getElementById('courierForm');
+        const message = document.getElementById('message');
+        const result = document.getElementById('result');
+        const senderCitySelect = document.getElementById('senderCity');
+        const receiverCitySelect = document.getElementById('receiverCity');
+        const weightInput = document.getElementById('weight');
+        const chargeableWeightSpan = document.getElementById('chargeableWeight');
+        const totalChargeSpan = document.getElementById('totalCharge');
+
+        // Populate city dropdowns
+        window.INDIAN_CITIES.forEach(city => {
+            const option1 = document.createElement('option');
+            option1.value = city;
+            option1.textContent = city;
+            senderCitySelect.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = city;
+            option2.textContent = city;
+            receiverCitySelect.appendChild(option2);
+        });
+
+        // Calculate delivery charge as user types weight
+        weightInput.addEventListener('input', () => {
+            const weight = parseFloat(weightInput.value);
+            if (weight && weight > 0) {
+                const chargeableWeight = Math.ceil(weight);
+                const totalCharge = chargeableWeight * 30;
+                chargeableWeightSpan.textContent = chargeableWeight;
+                totalChargeSpan.textContent = '₹' + totalCharge;
+            } else {
+                chargeableWeightSpan.textContent = '-';
+                totalChargeSpan.textContent = '₹0';
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            message.className = 'alert hidden';
+            result.classList.add('hidden');
+
+            const formData = {
+                senderName: document.getElementById('senderName').value,
+                senderCity: document.getElementById('senderCity').value,
+                senderMobile: document.getElementById('senderMobile').value,
+                senderAddress: document.getElementById('senderAddress').value,
+                receiverName: document.getElementById('receiverName').value,
+                receiverCity: document.getElementById('receiverCity').value,
+                recipientMobile: document.getElementById('recipientMobile').value,
+                receiverAddress: document.getElementById('receiverAddress').value,
+                weight: parseFloat(document.getElementById('weight').value),
+                notes: document.getElementById('notes').value
+            };
+
+            try {
+                const response = await window.ocmsAPI.api('/couriers', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const courierId = response.courier_id || response.courierId;
+                document.getElementById('resultCourierId').textContent = courierId;
+                document.getElementById('receiptBtn').onclick = () => window.ocmsAPI.downloadReceipt(courierId);
+                
+                result.classList.remove('hidden');
+                form.reset();
+                window.scrollTo(0, document.body.scrollHeight);
+            } catch (error) {
+                message.textContent = error.message;
+                message.className = 'alert error';
+            }
+        });
+    </script>
+</body>
+</html>

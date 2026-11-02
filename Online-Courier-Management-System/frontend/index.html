@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OCMS - Online Courier Management System</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+  <body>
+    <header class="header" id="topnav"></header>
+
+    <main class="container">
+      <div class="card text-center" style="max-width: 600px; margin: 60px auto">
+        <h1>Online Courier Management System</h1>
+        <p style="margin: 20px 0; color: var(--text-muted)">
+          Welcome to OCMS. Manage your courier deliveries with ease.
+        </p>
+        <div
+          style="
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+          "
+        >
+          <a href="login.html" class="btn">Login</a>
+          <a href="signup.html" class="btn btn-success">Sign Up (User)</a>
+          <a href="staff-request.html" class="btn btn-secondary"
+            >Apply as Staff</a
+          >
+        </div>
+
+        <p
+          style="
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 14px;
+          "
+        >
+          <strong>Smart Courier Management for a Fast-Moving World.</strong>
+          <!-- Username: admin | Password: admin  -->
+        </p>
+      </div>
+
+      <div class="card" style="max-width: 800px; margin: 0 auto">
+        <h3>Features</h3>
+        <ul style="list-style: none; padding: 0">
+          <li style="padding: 8px 0">
+            ✓ Track your courier shipments in real-time
+          </li>
+          <li style="padding: 8px 0">✓ Download PDF receipts</li>
+          <li style="padding: 8px 0">✓ City-based staff management</li>
+          <li style="padding: 8px 0">✓ Admin dashboard for monitoring</li>
+        </ul>
+      </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+  </body>
+</html>

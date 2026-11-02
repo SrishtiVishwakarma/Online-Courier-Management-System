@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Requests - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>Pending Staff Requests</h2>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="requestsList" class="hidden"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadRequests() {
+            try {
+                const requests = await window.ocmsAPI.api('/admin/staff-requests');
+                const loading = document.getElementById('loading');
+                const list = document.getElementById('requestsList');
+
+                loading.classList.add('hidden');
+                list.classList.remove('hidden');
+
+                if (!requests || requests.length === 0) {
+                    list.innerHTML = '<p style="text-align:center;color:var(--text-muted);">No pending requests.</p>';
+                    return;
+                }
+
+                list.innerHTML = requests.map(request => `
+                    <div class="card" style="background: var(--bg);">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4>${request.name}</h4>
+                                <p style="color: var(--text-muted); font-size: 14px;">${request.email} • ${request.city}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-success btn-small" onclick="approveRequest(${request.id})">Approve</button>
+                                <button class="btn btn-danger btn-small" onclick="rejectRequest(${request.id})">Reject</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<p class="alert error">${error.message}</p>`;
+            }
+        }
+
+        async function approveRequest(id) {
+            if (!confirm('Approve this staff request? A staff account will be created with their chosen password.')) return;
+
+            try {
+                const response = await window.ocmsAPI.api(`/admin/staff-requests/${id}/approve`, { method: 'POST' });
+                alert(response.message || 'Staff request approved successfully!');
+                loadRequests();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function rejectRequest(id) {
+            if (!confirm('Reject this staff request? This action cannot be undone.')) return;
+
+            try {
+                const response = await window.ocmsAPI.api(`/admin/staff-requests/${id}/reject`, { method: 'POST' });
+                alert(response.message || 'Staff request rejected.');
+                loadRequests();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        loadRequests();
+    </script>
+</body>
+</html>

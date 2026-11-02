@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Profile - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <h2>Update Profile</h2>
+            <div id="message" class="alert hidden"></div>
+            
+            <form id="profileForm" class="form-grid">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email (Read Only)</label>
+                    <input type="email" id="email" name="email" readonly style="background: var(--bg);">
+                </div>
+                
+                <button type="submit" class="btn">Update Profile</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        const form = document.getElementById('profileForm');
+        const message = document.getElementById('message');
+
+        async function loadProfile() {
+            try {
+                const profile = await window.ocmsAPI.api('/user/profile');
+                document.getElementById('name').value = profile.name || '';
+                document.getElementById('email').value = profile.email || '';
+            } catch (error) {
+                message.textContent = error.message;
+                message.className = 'alert error';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            message.className = 'alert hidden';
+
+            try {
+                await window.ocmsAPI.api('/user/profile', {
+                    method: 'PUT',
+                    body: {
+                        name: document.getElementById('name').value
+                    }
+                });
+
+                message.textContent = 'Profile updated successfully!';
+                message.className = 'alert success';
+            } catch (error) {
+                message.textContent = error.message;
+                message.className = 'alert error';
+            }
+        });
+
+        loadProfile();
+    </script>
+</body>
+</html>

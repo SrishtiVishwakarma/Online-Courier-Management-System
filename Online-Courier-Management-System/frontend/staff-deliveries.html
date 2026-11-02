@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deliveries - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>Your Deliveries</h2>
+            <div id="cityInfo" class="alert info" style="margin-bottom: 1rem;"></div>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="courierList" class="courier-list hidden"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadDeliveries() {
+            try {
+                // Get staff profile to display city
+                const user = window.ocmsAPI.getUser();
+                const staffCity = user?.city || 'Unknown';
+                
+                // Display city info
+                const cityInfo = document.getElementById('cityInfo');
+                cityInfo.innerHTML = `<strong>📍 Your City:</strong> ${staffCity} - You can only deliver couriers to receivers in ${staffCity}`;
+
+                const couriers = await window.ocmsAPI.api('/staff/deliveries');
+                const loading = document.getElementById('loading');
+                const list = document.getElementById('courierList');
+
+                loading.classList.add('hidden');
+                list.classList.remove('hidden');
+
+                if (!couriers || couriers.length === 0) {
+                    list.innerHTML = '<p style="text-align:center;color:var(--text-muted);">No deliveries pending in your city.</p>';
+                    return;
+                }
+
+                list.innerHTML = couriers.map(courier => `
+                    <div class="courier-item">
+                        <div class="courier-info">
+                            <h4>${courier.courierId} <span class="badge ${courier.status}">${courier.status}</span></h4>
+                            <p><strong>From:</strong> ${courier.senderCity} → <strong>To:</strong> ${courier.receiverCity}</p>
+                            <p><strong>Receiver:</strong> ${courier.receiverName}</p>
+                            ${courier.recipientMobile ? `<p><strong>Contact:</strong> ${courier.recipientMobile}</p>` : ''}
+                            <p><strong>Weight:</strong> ${courier.weight} kg</p>
+                        </div>
+                        <div class="courier-actions">
+                            <button class="btn btn-small btn-success" onclick="markDelivered('${courier.courierId}')">✔ Deliver Courier</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<p class="alert error">${error.message}</p>`;
+            }
+        }
+
+        async function markDelivered(courierId) {
+            if (!confirm(`Mark courier ${courierId} as delivered?`)) return;
+
+            try {
+                await window.ocmsAPI.api(`/staff/couriers/${courierId}/deliver`, { method: 'POST' });
+                alert('Courier marked as delivered!');
+                loadDeliveries();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        loadDeliveries();
+    </script>
+</body>
+</html>

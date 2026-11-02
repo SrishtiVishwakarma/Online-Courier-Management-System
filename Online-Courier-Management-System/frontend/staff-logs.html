@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>My Action Logs</h2>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="logsList" class="hidden"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadLogs() {
+            try {
+                const logs = await window.ocmsAPI.api('/staff/logs');
+                const loading = document.getElementById('loading');
+                const list = document.getElementById('logsList');
+
+                loading.classList.add('hidden');
+                list.classList.remove('hidden');
+
+                if (!logs || logs.length === 0) {
+                    list.innerHTML = '<p style="text-align:center;color:var(--text-muted);">No logs found.</p>';
+                    return;
+                }
+
+                list.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Courier ID</th>
+                                <th>Status</th>
+                                <th>Note</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${logs.map(log => `
+                                <tr>
+                                    <td><strong>${log.courierId}</strong></td>
+                                    <td><span class="badge ${log.status}">${log.status}</span></td>
+                                    <td>${log.note || '-'}</td>
+                                    <td>${new Date(log.timestamp).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<p class="alert error">${error.message}</p>`;
+            }
+        }
+
+        loadLogs();
+    </script>
+</body>
+</html>

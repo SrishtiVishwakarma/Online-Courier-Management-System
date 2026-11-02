@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Home - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>Admin Dashboard</h2>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="summary" class="hidden"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadSummary() {
+            try {
+                console.log('Loading admin dashboard...');
+                console.log('Auth token:', window.ocmsAPI.getToken());
+                console.log('User role:', window.ocmsAPI.getRole());
+                
+                const [summary, couriers] = await Promise.all([
+                    window.ocmsAPI.api('/admin/dashboard/status-summary'),
+                    window.ocmsAPI.api('/admin/couriers')
+                ]);
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('summary').classList.remove('hidden');
+                
+                const totalCouriers = couriers.length;
+                
+                document.getElementById('summary').innerHTML = `
+                    <h3>Courier Status Summary</h3>
+                    <div style="margin-bottom: 20px; padding: 15px; background: var(--bg); border-radius: 8px; border-left: 4px solid var(--primary);">
+                        <h4 style="margin: 0 0 10px 0; color: var(--primary);">Total Couriers: ${totalCouriers}</h4>
+                        <p style="margin: 0; color: #666;">Click "View All Couriers" below to see detailed information including Courier IDs</p>
+                    </div>
+                    <div class="form-grid cols-2">
+                        ${Object.entries(summary).map(([status, count]) => `
+                            <div class="card" style="background: var(--bg); text-align: center;">
+                                <h3 style="font-size: 32px; color: var(--primary);">${count}</h3>
+                                <p>${status}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <a href="admin-staff-requests.html" class="btn">View Staff Requests</a>
+                        <a href="admin-staff-details.html" class="btn btn-secondary">View All Staff</a>
+                        <a href="admin-couriers.html" class="btn btn-secondary">View All Couriers</a>
+                        <a href="admin-track.html" class="btn btn-secondary">Track Courier</a>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<p class="alert error">${error.message}</p>`;
+            }
+        }
+
+        loadSummary();
+    </script>
+</body>
+</html>

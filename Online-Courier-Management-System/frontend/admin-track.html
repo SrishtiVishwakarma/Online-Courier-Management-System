@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Courier - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card" style="max-width: 1000px; margin: 0 auto;">
+            <h2>Track Courier by ID</h2>
+            
+            <div class="form-group">
+                <label for="courierId">Enter Courier ID</label>
+                <input type="text" id="courierId" placeholder="OCMS-20251102-00001">
+            </div>
+            
+            <div id="result" class="hidden" style="margin-top: 20px;"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        const input = document.getElementById('courierId');
+        const result = document.getElementById('result');
+
+        input.addEventListener('input', () => {
+            if (input.value.length > 5) {
+                fetchCourier();
+            }
+        });
+
+        async function fetchCourier() {
+            const courierId = input.value.trim();
+            if (!courierId) return;
+
+            try {
+                const courier = await window.ocmsAPI.api(`/admin/couriers/search?courier_id=${encodeURIComponent(courierId)}`);
+                
+                result.innerHTML = `
+                    <div class="card">
+                        <div class="flex items-center justify-between" style="margin-bottom: 16px;">
+                            <h3>${courier.courierId}</h3>
+                            <span class="badge ${courier.status}">${courier.status}</span>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <p><strong>From:</strong> ${courier.senderName} - ${courier.senderCity}</p>
+                            ${courier.senderMobile ? `<p><strong>Sender Mobile:</strong> ${courier.senderMobile}</p>` : ''}
+                            <p><strong>To:</strong> ${courier.receiverName} - ${courier.receiverCity}</p>
+                            ${courier.recipientMobile ? `<p><strong>Receiver Mobile:</strong> ${courier.recipientMobile}</p>` : ''}
+                            <p><strong>Weight:</strong> ${courier.weight} kg</p>
+                            <p><strong>Delivery Charge:</strong> ₹${courier.deliveryCharge || (Math.ceil(courier.weight) * 30)}</p>
+                            <p><strong>Created:</strong> ${new Date(courier.createdAt).toLocaleString()}</p>
+                        </div>
+                        
+                        <button onclick="window.ocmsAPI.downloadReceipt('${courier.courierId}')" class="btn btn-success btn-small">
+                            Download Receipt
+                        </button>
+                        
+                        <h4 style="margin-top: 20px; margin-bottom: 12px;">Full Status History</h4>
+                        <div>
+                            ${(courier.logs || []).map(log => `
+                                <div style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span class="badge ${log.status}">${log.status}</span>
+                                        <span style="font-size: 13px; color: var(--text-muted);">
+                                            ${new Date(log.timestamp).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    ${log.note ? `<p style="font-size: 13px; margin-top: 4px;">${log.note}</p>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                result.classList.remove('hidden');
+            } catch (error) {
+                result.innerHTML = `<p class="alert error">${error.message}</p>`;
+                result.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

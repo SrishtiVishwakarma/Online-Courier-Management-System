@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Home - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+    </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>Your Shipments</h2>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="courierList" class="courier-list hidden"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadCouriers() {
+            const user = window.ocmsAPI.getUser();
+            if (!user) return;
+
+            try {
+                const couriers = await window.ocmsAPI.api(`/users/${user.id}/couriers`);
+                const loading = document.getElementById('loading');
+                const list = document.getElementById('courierList');
+
+                loading.classList.add('hidden');
+                list.classList.remove('hidden');
+
+                if (!couriers || couriers.length === 0) {
+                    list.innerHTML = '<p style="text-align:center;color:var(--text-muted);">No couriers found. Create your first shipment!</p>';
+                    return;
+                }
+
+                list.innerHTML = couriers.map(courier => `
+                    <div class="courier-item">
+                        <div class="courier-info">
+                            <h4>${courier.courierId} <span class="badge ${courier.status}">${courier.status}</span></h4>
+                            <p>${courier.senderCity} → ${courier.receiverCity} • ${courier.weight} kg • ₹${courier.deliveryCharge || (Math.ceil(courier.weight) * 30)}</p>
+                        </div>
+                        <div class="courier-actions">
+                            <button onclick="viewCourierDetails('${courier.courierId}')" class="btn btn-small">View Details</button>
+                            <button onclick="window.ocmsAPI.downloadReceipt('${courier.courierId}')" class="btn btn-small btn-success">Download Receipt</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<p class="alert error">${error.message}</p>`;
+            }
+        }
+
+        function viewCourierDetails(courierId) {
+            try {
+                // Prevent any potential event bubbling issues
+                event.stopPropagation();
+                
+                // Use window.location.assign for better navigation control
+                window.location.assign(`courier-status.html?id=${courierId}`);
+            } catch (error) {
+                console.error('Navigation error:', error);
+                // Fallback navigation method
+                window.location.href = `courier-status.html?id=${courierId}`;
+            }
+        }
+
+        loadCouriers();
+    </script>
+</body>
+</html>

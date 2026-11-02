@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Home - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>Staff Dashboard</h2>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="summary" class="hidden"></div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        
+
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadSummary() {
+            try {
+                const summary = await window.ocmsAPI.api('/staff/summary');
+                const user = window.ocmsAPI.getUser();
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('summary').classList.remove('hidden');
+                document.getElementById('summary').innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <p><strong>Your City:</strong> ${user.city}</p>
+                    </div>
+                    <div class="form-grid cols-2">
+                        <div class="card" style="background: var(--bg); text-align: center;">
+                            <h3 style="font-size: 32px; color: var(--primary);">${summary.pendingPickups}</h3>
+                            <p>Pending Pickups</p>
+                            <a href="staff-pickups.html" class="btn btn-small" style="margin-top: 12px;">View</a>
+                        </div>
+                        <div class="card" style="background: var(--bg); text-align: center;">
+                            <h3 style="font-size: 32px; color: var(--success);">${summary.deliveries}</h3>
+                            <p>Pending Deliveries</p>
+                            <a href="staff-deliveries.html" class="btn btn-small" style="margin-top: 12px;">View</a>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<p class="alert error">${error.message}</p>`;
+            }
+        }
+
+        loadSummary();
+    </script>
+</body>
+</html>

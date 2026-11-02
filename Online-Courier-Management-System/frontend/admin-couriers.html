@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Couriers - OCMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>"/>
+    <style>
+        .courier-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .courier-table th,
+        .courier-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .courier-table th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        .courier-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-created { background-color: #e3f2fd; color: #1976d2; }
+        .status-picked_up { background-color: #fff3e0; color: #f57c00; }
+        .status-in_transit { background-color: #f3e5f5; color: #7b1fa2; }
+        .status-delivered { background-color: #e8f5e8; color: #388e3c; }
+        .status-cancelled { background-color: #ffebee; color: #d32f2f; }
+        .search-box {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        .courier-count {
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+    </style>
+  </head>
+<body>
+    <header class="header" id="topnav"></header>
+    
+    <main class="container">
+        <div class="card">
+            <h2>All Couriers</h2>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="content" class="hidden">
+                <div class="courier-count" id="courierCount"></div>
+                <input type="text" id="searchBox" class="search-box" placeholder="Search by Courier ID, Tracking Number, Sender, or Receiver...">
+                <div style="overflow-x: auto;">
+                    <table class="courier-table" id="courierTable">
+                        <thead>
+                            <tr>
+                                <th>Courier ID</th>
+                                <th>Tracking Number</th>
+                                <th>Sender</th>
+                                <th>Receiver</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Status</th>
+                                <th>Assigned Staff</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courierTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        if (!window.ocmsAPI.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        let allCouriers = [];
+
+        async function loadCouriers() {
+            try {
+                console.log('Loading couriers...');
+                console.log('Auth token:', window.ocmsAPI.getToken());
+                console.log('User role:', window.ocmsAPI.getRole());
+                console.log('User info:', window.ocmsAPI.getUser());
+                
+                const couriers = await window.ocmsAPI.api('/admin/couriers');
+                console.log('Couriers loaded:', couriers);
+                allCouriers = couriers;
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+                
+                displayCouriers(couriers);
+                updateCourierCount(couriers.length);
+                
+            } catch (error) {
+                console.error('Error loading couriers:', error);
+                console.log('Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    token: window.ocmsAPI.getToken(),
+                    role: window.ocmsAPI.getRole()
+                });
+                document.getElementById('loading').innerHTML = `<p class="alert error">Failed to load couriers: ${error.message}<br><small>Check console for details</small></p>`;
+            }
+        }
+
+        function displayCouriers(couriers) {
+            const tbody = document.getElementById('courierTableBody');
+            tbody.innerHTML = '';
+            
+            couriers.forEach(courier => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${courier.courierId}</strong></td>
+                    <td>${courier.trackingNumber}</td>
+                    <td>${courier.senderName}</td>
+                    <td>${courier.receiverName}</td>
+                    <td>${courier.senderCity}</td>
+                    <td>${courier.receiverCity}</td>
+                    <td><span class="status-badge status-${courier.status.toLowerCase()}">${courier.status}</span></td>
+                    <td>${courier.assignedStaff}</td>
+                    <td>${new Date(courier.createdAt).toLocaleDateString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateCourierCount(count) {
+            document.getElementById('courierCount').textContent = `Total Couriers: ${count}`;
+        }
+
+        function searchCouriers() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const filteredCouriers = allCouriers.filter(courier => 
+                courier.courierId.toLowerCase().includes(searchTerm) ||
+                courier.trackingNumber.toLowerCase().includes(searchTerm) ||
+                courier.senderName.toLowerCase().includes(searchTerm) ||
+                courier.receiverName.toLowerCase().includes(searchTerm) ||
+                courier.senderCity.toLowerCase().includes(searchTerm) ||
+                courier.receiverCity.toLowerCase().includes(searchTerm) ||
+                courier.status.toLowerCase().includes(searchTerm)
+            );
+            
+            displayCouriers(filteredCouriers);
+            updateCourierCount(filteredCouriers.length);
+        }
+
+        document.getElementById('searchBox').addEventListener('input', searchCouriers);
+
+        loadCouriers();
+    </script>
+</body>
+</html>
